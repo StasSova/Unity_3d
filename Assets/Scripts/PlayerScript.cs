@@ -1,34 +1,60 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-
 public class PlayerScript : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    [SerializeField] private float forceFactor = 5f;
-    private InputAction _moveAction;
-    private Rigidbody _rb;
-    private Camera _camera;
+    [SerializeField]
+    private float forceFactor = 1.0f;
 
-    void Start()
+    private InputAction moveAction;
+    private Rigidbody rb;
+    private Vector3 correctedForward;
+    private AudioSource hitlSound;
+
+    private void Start()
     {
-        _camera = Camera.main;
-        _moveAction = InputSystem.actions.FindAction("Move");
-        _rb = GetComponent<Rigidbody>();
+        moveAction = InputSystem.actions.FindAction("Move");
+        rb = GetComponent<Rigidbody>();
+        hitlSound = GetComponent<AudioSource>();
+        GameState.Subscribe(nameof(GameState.effectsVolume), OnVolumeChanged);
+        OnVolumeChanged();
     }
 
-    // Update is called once per frame
+
     void Update()
     {
-        Vector2 moveValue = _moveAction.ReadValue<Vector2>();
-        Vector3 correctedForward = _camera.transform.forward;
+        Vector2 moveValue = moveAction.ReadValue<Vector2>();
+        correctedForward = Camera.main.transform.forward;
         correctedForward.y = 0.0f;
         correctedForward.Normalize();
-        
-        Vector3 forceValue = forceFactor * ( // относительно камеры
-            _camera.transform.right * moveValue.x +
-            correctedForward * moveValue.y
-        );
-        // new Vector3(moveValue.x, 0.0f, moveValue.y) // относительно мира;
-        _rb.AddForce(forceValue);
+        Vector3 forceValue = forceFactor *
+// new Vector3(moveValue.x, 0.Of, moveValue.y); - Big
+(Camera.main.transform.right * moveValue.x +
+correctedForward * moveValue.y);
+        rb.AddForce(forceValue);
+    }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.CompareTag("Wall"))
+
+        {
+            if (!hitlSound.isPlaying)
+            {
+
+                hitlSound.volume = GameState.effectsVolume;
+                hitlSound.Play();
+            }
+        }
+    }
+
+    private void OnVolumeChanged()
+    {
+        hitlSound.volume = GameState.effectsVolume;
+    }
+
+
+    private void OnDestroy()
+    {
+        GameState.UnSubscribe(nameof(GameState.effectsVolume), OnDestroy);
     }
 }
