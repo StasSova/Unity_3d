@@ -1,17 +1,19 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+
 public class PlayerScript : MonoBehaviour
 {
-    [SerializeField]
-    private float forceFactor = 1.0f;
+    [SerializeField] private float forceFactor = 1.0f;
 
     private InputAction moveAction;
     private Rigidbody rb;
     private Vector3 correctedForward;
     private AudioSource hitlSound;
+    private Camera mainCamera;
 
     private void Start()
     {
+        mainCamera = Camera.main;
         moveAction = InputSystem.actions.FindAction("Move");
         rb = GetComponent<Rigidbody>();
         hitlSound = GetComponent<AudioSource>();
@@ -20,16 +22,21 @@ public class PlayerScript : MonoBehaviour
     }
 
 
-    void Update()
+    private void Update()
     {
-        Vector2 moveValue = moveAction.ReadValue<Vector2>();
-        correctedForward = Camera.main.transform.forward;
+        var moveValue = moveAction.ReadValue<Vector2>();
+        correctedForward = mainCamera.transform.forward;
         correctedForward.y = 0.0f;
         correctedForward.Normalize();
-        Vector3 forceValue = forceFactor *
-// new Vector3(moveValue.x, 0.Of, moveValue.y); - Big
-(Camera.main.transform.right * moveValue.x +
-correctedForward * moveValue.y);
+        var forceValue = forceFactor *
+        // new Vector3(moveValue.x, 0.Of, moveValue.y); - Big
+                         (mainCamera.transform.right * moveValue.x +
+                          correctedForward * moveValue.y);
+        if (Time.timeScale > 0 && Input.GetKey(KeyCode.Keypad8))
+        {
+            forceValue += Time.deltaTime * correctedForward;
+        }
+        
         rb.AddForce(forceValue);
     }
 
@@ -37,14 +44,11 @@ correctedForward * moveValue.y);
     {
         if (collision.gameObject.CompareTag("Wall"))
 
-        {
             if (!hitlSound.isPlaying)
             {
-
                 hitlSound.volume = GameState.effectsVolume;
                 hitlSound.Play();
             }
-        }
     }
 
     private void OnVolumeChanged()
